@@ -115,11 +115,24 @@
 
 ---
 
-## 六、进阶：让手机随时随地访问（不依赖电脑）
+## 六、进阶：让手机随时随地访问（不依赖电脑）—— GitHub Pages
 
-如果不想每次都要电脑开服务器，可以把整个项目部署到免费静态托管（如 GitHub Pages / Netlify / Cloudflare Pages），
-手机即可在任何网络下打开。注意：此时 `data/latest.json` 需要在**电脑端自动化生成后提交推送**到仓库才能更新，
-可在 Codex 定时任务提示词末尾追加一句：“生成后运行 git 提交并推送到远程仓库”。
+把整个项目部署到 GitHub Pages 免费托管后，手机在任何网络下都能打开，不再依赖电脑开服务器。
+
+### 当前进度（本机已准备好）
+- ✅ 项目已初始化为 git 仓库（`main` 分支，已提交全部文件，`logs/` 不上传）
+- ✅ `run-每日早报.ps1` 已内置“生成后自动 git 提交并推送”逻辑
+- ⬜ 待完成：创建 GitHub 仓库并授权推送（需要你的 GitHub 账号，推荐安装 GitHub CLI 登录一次）
+
+### 部署步骤（需一次 GitHub 账号）
+1. 安装 GitHub CLI：`winget install GitHub.cli`，然后运行 `gh auth login`（浏览器登录一次）。
+2. 让 Codex 执行：创建公开仓库 `daily-eco-brief` → 推送 `main` → 开启 Pages（Build from branch: main, /root）。
+3. 部署后手机访问地址：`https://<你的用户名>.github.io/daily-eco-brief/`
+
+### 部署后如何使用
+- 手机直接浏览器打开上面的公网地址，或扫码访问（届时可生成公网二维码）；同样支持“添加到主屏幕”。
+- 每天 8:30 电脑自动生成早报后，脚本会自动 `git commit + push`，约 1-3 分钟后 Pages 更新，手机刷新即见新一期。
+- 局域网方案（`启动手机版.cmd`）仍可继续用，两者并存互不影响。
 
 ---
 

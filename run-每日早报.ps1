@@ -58,5 +58,29 @@ Log "[开始] 运行 codex exec 生成每日经济早报..."
 # 无人值守运行：-C 项目目录、跳过 git 检查、workspace-write 沙箱、不弹交互
 & $CodexCli exec -C $Project --skip-git-repo-check -s workspace-write --color never -o $LastMsg $Prompt *>> $OutputFile
 $code = $LASTEXITCODE
+# ---- 生成成功后，自动同步到 GitHub（部署到 Pages 后保持最新） ----
+if ($code -eq 0) {
+  Log "[同步] 提交并推送数据到 GitHub..."
+  $Git = "C:\Users\jzz20\.cache\codex-runtimes\codex-primary-runtime\dependencies\native\git\cmd\git.exe"
+  if (-not (Test-Path -LiteralPath $Git)) {
+    $gcmd = Get-Command git -ErrorAction SilentlyContinue
+    if ($gcmd) { $Git = $gcmd.Source } else { $Git = "" }
+  }
+  if ($Git -and (Test-Path -LiteralPath (Join-Path $Project ".git"))) {
+    $null = & $Git -C $Project add -A 2>&1
+    $stamp = Get-Date -Format "yyyy-MM-dd"
+    $null = & $Git -C $Project -c core.quotepath=false commit -m "daily report $stamp" 2>&1
+    $remote = & $Git -C $Project remote get-url origin 2>&1
+    if ($LASTEXITCODE -eq 0 -and $remote) {
+      $null = & $Git -C $Project push origin main 2>&1
+      Log ("[同步] push 退出码 = {0}" -f $LASTEXITCODE)
+    } else {
+      Log "[同步] 尚未配置远程仓库 origin，跳过推送（部署到 GitHub Pages 后会自动启用）"
+    }
+  } else {
+    Log "[同步] 未找到 git 或 .git，跳过推送"
+  }
+}
+
 Log ("[结束] 退出码 = {0}" -f $code)
 exit $code
