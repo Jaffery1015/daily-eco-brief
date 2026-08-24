@@ -119,15 +119,16 @@
 
 把整个项目部署到 GitHub Pages 免费托管后，手机在任何网络下都能打开，不再依赖电脑开服务器。
 
-### 当前进度（本机已准备好）
-- ✅ 项目已初始化为 git 仓库（`main` 分支，已提交全部文件，`logs/` 不上传）
-- ✅ `run-每日早报.ps1` 已内置“生成后自动 git 提交并推送”逻辑
-- ⬜ 待完成：创建 GitHub 仓库并授权推送（需要你的 GitHub 账号，推荐安装 GitHub CLI 登录一次）
+### 当前进度（已部署完成 ✅）
+- ✅ 已部署到 GitHub Pages：**https://jaffery1015.github.io/daily-eco-brief/**
+- ✅ 手机扫码：项目根目录 `二维码-公网访问.png`
+- ✅ `run-每日早报.ps1` 已内置“生成后自动 git 提交并推送”，每天 8:30 自动更新线上数据
 
-### 部署步骤（需一次 GitHub 账号）
+### 部署步骤（已完成，如日后重装参考）
 1. 安装 GitHub CLI：`winget install GitHub.cli`，然后运行 `gh auth login`（浏览器登录一次）。
-2. 让 Codex 执行：创建公开仓库 `daily-eco-brief` → 推送 `main` → 开启 Pages（Build from branch: main, /root）。
-3. 部署后手机访问地址：`https://<你的用户名>.github.io/daily-eco-brief/`
+2. `gh repo create daily-eco-brief --public --source <项目目录> --push`
+3. `gh api -X POST repos/<用户名>/daily-eco-brief/pages -f "source[branch]=main" -f "source[path]=/"`
+4. 部署后手机访问地址：`https://<用户名>.github.io/daily-eco-brief/`
 
 ### 部署后如何使用
 - 手机直接浏览器打开上面的公网地址，或扫码访问（届时可生成公网二维码）；同样支持“添加到主屏幕”。
