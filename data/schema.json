@@ -1,0 +1,177 @@
+{
+  "$comment": "每日经济早报 data/latest.json 的数据结构说明。自动化每天生成时必须严格遵循；字段缺失会导致 App 渲染为空。",
+  "meta": {
+    "$comment": "报告元信息",
+    "title": {
+      "type": "string",
+      "example": "每日经济早报",
+      "desc": "固定标题"
+    },
+    "date": {
+      "type": "string",
+      "example": "2026-08-24",
+      "desc": "报告日期（当天）"
+    },
+    "weekday": {
+      "type": "string",
+      "example": "星期一",
+      "desc": "中文星期"
+    },
+    "dataCutoff": {
+      "type": "string",
+      "example": "数据截至：8月21日（周五）收盘",
+      "desc": "数据截止说明"
+    },
+    "editor": {
+      "type": "string",
+      "example": "Codex 经济学助手",
+      "desc": "编制者"
+    },
+    "updatedAt": {
+      "type": "string",
+      "example": "2026-08-24T08:30:00+08:00",
+      "desc": "生成时间(ISO8601)"
+    },
+    "isTradingDay": {
+      "type": "boolean",
+      "example": true,
+      "desc": "是否为交易日"
+    }
+  },
+  "focus": {
+    "$comment": "一、今日焦点速览（30秒版），5行一句话摘要",
+    "chinaPolicy": {
+      "type": "string",
+      "desc": "🇨🇳 中国政策一句话"
+    },
+    "chinaData": {
+      "type": "string",
+      "desc": "📊 中国数据一句话"
+    },
+    "globalCentralBanks": {
+      "type": "string",
+      "desc": "🏦 全球央行一句话"
+    },
+    "assets": {
+      "type": "string",
+      "desc": "💹 大类资产一句话"
+    },
+    "industry": {
+      "type": "string",
+      "desc": "🏭 产业/公司一句话"
+    }
+  },
+  "china": {
+    "$comment": "二、中国：政策与数据",
+    "policy": {
+      "type": "array<string>",
+      "desc": "政策动态（谁、何时、做了什么、为什么、影响）"
+    },
+    "data": {
+      "type": "array<string>",
+      "desc": "最新经济数据（指标、数值、前值、同比/环比、解读）"
+    },
+    "highlights": {
+      "type": "array<string>",
+      "desc": "结构亮点（外资/出口/产业亮点）"
+    }
+  },
+  "global": {
+    "$comment": "三、全球市场与央行",
+    "centralBanks": {
+      "type": "array<{name, content}>",
+      "desc": "主要央行动态"
+    },
+    "bondsFx": {
+      "type": "array<string>",
+      "desc": "债市与汇市（美债、美元/人民币）"
+    },
+    "geopolitics": {
+      "type": "array<string>",
+      "desc": "地缘与贸易"
+    }
+  },
+  "assets": {
+    "$comment": "四、大类资产表现。固定顺序与数量：上证指数、黄金(现货)、布伦特原油、美元指数、比特币、10Y美债收益率",
+    "type": "array<{name, value, unit, change, comment}>",
+    "name": {
+      "type": "string",
+      "example": "上证指数"
+    },
+    "value": {
+      "type": "string",
+      "example": "3905.20",
+      "desc": "数值"
+    },
+    "unit": {
+      "type": "string",
+      "example": "点 / 美元/盎司 / %",
+      "desc": "单位，可为空字符串"
+    },
+    "change": {
+      "type": "string",
+      "example": "+0.04%",
+      "desc": "涨跌（带 +/- 号），App 按 A 股习惯红色=涨、绿色=跌"
+    },
+    "comment": {
+      "type": "string",
+      "example": "站稳3900点",
+      "desc": "一句话简评"
+    }
+  },
+  "schedule": {
+    "$comment": "五、今日/本周重要日程",
+    "type": "array<{time, event, watch}>",
+    "time": {
+      "type": "string",
+      "example": "08-25 09:30",
+      "desc": "时间"
+    },
+    "event": {
+      "type": "string",
+      "desc": "事件"
+    },
+    "watch": {
+      "type": "string",
+      "desc": "看点"
+    }
+  },
+  "learning": {
+    "$comment": "六、经济学学习视角：给大一新生的1-2个思考题+参考答案",
+    "type": "array<{concept, question, answer}>",
+    "concept": {
+      "type": "string",
+      "example": "财政政策 vs 货币政策",
+      "desc": "课堂概念标签"
+    },
+    "question": {
+      "type": "string",
+      "desc": "思考题"
+    },
+    "answer": {
+      "type": "string",
+      "desc": "参考答案（3-5句，大白话+课堂概念）"
+    }
+  },
+  "tracker": {
+    "$comment": "七、关键指标追踪（每周五更新一次即可，可省略）",
+    "type": "array<{name, value, freq, note}>",
+    "name": {
+      "type": "string",
+      "desc": "指标名"
+    },
+    "value": {
+      "type": "string",
+      "desc": "最新值"
+    },
+    "freq": {
+      "type": "string",
+      "example": "月度 / 日度 / 会议",
+      "desc": "频率"
+    },
+    "note": {
+      "type": "string",
+      "desc": "说明"
+    }
+  }
+}
