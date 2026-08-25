@@ -1,12 +1,15 @@
-﻿# ============================================================
+﻿param([switch]$Force)
+
+# ============================================================
 #  每日经济早报 · codex exec 生成脚本
-#  供 Windows「任务计划程序」每天早上 8:30 调用
+#  供 Windows「任务计划程序」每天 8:30 / 登录时调用
+#  生成后自动 git 提交并推送到 GitHub（GitHub Pages 公网站点）
 #  日志与最近一次汇报保存在 logs\ 目录
 # ============================================================
 $ErrorActionPreference = "Continue"
 
 $Project    = "C:\Users\jzz20\Desktop\经济早报手机app"
-$CodexCli   = "C:\Users\jzz20\AppData\Local\OpenAI\Codex\bin\110b3d66a02d864e\codex.exe"
+$CodexCli   = ""
 $PromptFile = Join-Path $Project "automation\exec-提示词.txt"
 $LogDir     = Join-Path $Project "logs"
 $LogFile    = Join-Path $LogDir "运行日志.log"
@@ -23,11 +26,28 @@ function Log([string]$msg) {
   [System.IO.File]::AppendAllText($LogFile, $line + [Environment]::NewLine, (New-Object System.Text.UTF8Encoding($false)))
 }
 
+# 防重复：当天早报已生成则跳过（避免“8:30 + 登录补跑”等多次触发重复生成；手动加 -Force 可强制重跑）
+$today = Get-Date -Format "yyyy-MM-dd"
+$todayReport = Join-Path $Project ("data\reports\" + $today + ".json")
+if ((Test-Path -LiteralPath $todayReport) -and (-not $Force)) {
+  Log "[跳过] 今日($today)早报已生成，跳过本次运行（如需强制重跑请加 -Force）"
+  exit 0
+}
+
+# 自动定位 codex CLI：优先 Codex 桌面端自带的最新版（路径 hash 会随更新变化）
+$binRoot = Join-Path $env:LOCALAPPDATA "OpenAI\Codex\bin"
+if (Test-Path -LiteralPath $binRoot) {
+  $found = Get-ChildItem -LiteralPath $binRoot -Directory -ErrorAction SilentlyContinue | ForEach-Object {
+    $exe = Join-Path $_.FullName "codex.exe"
+    if (Test-Path -LiteralPath $exe) { Get-Item -LiteralPath $exe }
+  }
+  if ($found) { $CodexCli = ($found | Sort-Object LastWriteTime -Descending | Select-Object -First 1).FullName }
+}
 if (-not (Test-Path -LiteralPath $CodexCli)) {
   $cmd = Get-Command codex -ErrorAction SilentlyContinue
-  if ($cmd) { $CodexCli = $cmd.Source }
+  if ($cmd -and (Test-Path -LiteralPath $cmd.Source)) { $CodexCli = $cmd.Source }
   else {
-    Log "[错误] 找不到 codex 可执行文件: $CodexCli"
+    Log "[错误] 找不到 codex 可执行文件（已尝试 Codex bin 目录与 PATH）"
     exit 1
   }
 }
@@ -58,6 +78,7 @@ Log "[开始] 运行 codex exec 生成每日经济早报..."
 # 无人值守运行：-C 项目目录、跳过 git 检查、workspace-write 沙箱、不弹交互
 & $CodexCli exec -C $Project --skip-git-repo-check -s workspace-write --color never -o $LastMsg $Prompt *>> $OutputFile
 $code = $LASTEXITCODE
+
 # ---- 生成成功后，自动同步到 GitHub（部署到 Pages 后保持最新） ----
 if ($code -eq 0) {
   Log "[同步] 提交并推送数据到 GitHub..."
