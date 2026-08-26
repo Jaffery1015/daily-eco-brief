@@ -93,8 +93,15 @@ if ($code -eq 0) {
     $null = & $Git -C $Project -c core.quotepath=false commit -m "daily report $stamp" 2>&1
     $remote = & $Git -C $Project remote get-url origin 2>&1
     if ($LASTEXITCODE -eq 0 -and $remote) {
-      $null = & $Git -C $Project push origin main 2>&1
-      Log ("[同步] push 退出码 = {0}" -f $LASTEXITCODE)
+      # github.com 在国内网络偶尔抽风：自动重试最多 5 次，间隔 30 秒
+      $pushOk = $false
+      for ($attempt = 1; $attempt -le 5; $attempt++) {
+        $null = & $Git -C $Project push origin main 2>&1
+        if ($LASTEXITCODE -eq 0) { $pushOk = $true; break }
+        Log ("[同步] 第 {0}/5 次推送失败（退出码 {1}），30 秒后重试..." -f $attempt, $LASTEXITCODE)
+        Start-Sleep -Seconds 30
+      }
+      if ($pushOk) { Log "[同步] 推送成功" } else { Log "[同步] 推送失败：请检查网络后手动执行 git push" }
     } else {
       Log "[同步] 尚未配置远程仓库 origin，跳过推送（部署到 GitHub Pages 后会自动启用）"
     }
