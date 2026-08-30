@@ -91,7 +91,10 @@
 
 ### 已配置内容
 - 计划任务名称：**每日经济早报**（每天 08:30，仅当前用户登录时运行；若当时电脑关机，下次开机后会补跑）
-- 执行脚本：`run-每日早报.ps1`（读取 `automation/exec-提示词.txt` → 运行 `codex exec` → 写入 data 目录）
+- 执行脚本：`run-每日早报.ps1` v2（读取 `automation/exec-提示词.txt` → 运行 `codex exec` → 写入 data 目录）
+  - 自带 **40 分钟超时**：codex exec 卡住（网络重连等）会自动终止，不再无限挂起
+  - 自带**自愈恢复**：若 codex 因只读沙箱等原因未能落盘，脚本会从 `logs\最近一次-汇报.txt` 自动恢复 4 个文件（`automation\extract-report-from-log.ps1`）
+  - 只有确认当日报告真实生成后才提交推送，避免“假成功”
 - 运行日志：`logs\运行日志.log`、`logs\codex-运行输出.log`、`logs\最近一次-汇报.txt`
 - 已添加 **cc-switch 开机自启**（本地模型代理必须在线，任务才能连上 DeepSeek）
 
