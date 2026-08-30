@@ -14,14 +14,38 @@
 - 七、关键指标追踪（可选）：每周五更新一次即可，其余日期可省略或沿用最近值。
 
 第 3 步：保存文件（重要）
-在当前项目目录下生成/更新以下文件，全部使用 UTF-8 编码：
-1. data/latest.json —— App 主数据文件，结构必须严格遵循 data/schema.json（该文件是字段说明）。包含 meta（日期、星期、数据截止时间、更新时间）、focus（5 行焦点）、china、global、assets（固定 6 项资产，含 name/value/unit/change/comment）、schedule、learning（1-2 个思考题含答案）、tracker（可选）。
-2. data/reports/YYYY-MM-DD.json —— 当日存档（内容与 latest.json 相同），YYYY-MM-DD 为当天日期。
-3. data/history.json —— 历史索引，格式为 {"items":[{"date":"YYYY-MM-DD","weekday":"星期一","file":"YYYY-MM-DD.json"}]}，把今天追加到最前面（去重）。
+在当前项目目录下生成/更新以下文件，全部使用 UTF-8 编码。字段名必须严格按下述键名（App 只认这些键，写错会渲染为空）：
+1. data/latest.json —— App 主数据文件，结构：
+   meta: { "title": "每日经济早报", "date": "YYYY-MM-DD", "weekday": "星期日", "dataCutoff": "数据截至：…", "editor": "Codex 经济学助手", "updatedAt": "YYYY-MM-DD HH:mm", "isTradingDay": true }
+   focus: 必须是“对象”（不要用数组），5 个键固定为 chinaPolicy / chinaData / globalCentralBanks / assets / industry，分别对应：中国政策、中国数据、全球央行、大类资产、产业/公司。
+   china: { "policy": […], "data": […], "highlights": […] }
+   global: { "centralBanks": [{"name":"美联储","content":"…"}], "bondsFx": […], "geopolitics": […] }
+   assets: 固定 6 项，每项 {"name","value","unit","change","comment"}（顺序：上证指数、黄金现货、布伦特原油、美元指数、比特币、10Y美债收益率）。
+   schedule: 每项 {"time","event","watch"}
+   learning: 1-2 题，每项 {"concept","question","answer"}
+   tracker（可选）: 每项 {"name","value","freq","note"}，不要用 {"note":…,"items":[…]}
+2. data/reports/YYYY-MM-DD.json —— 当日存档（内容与 latest.json 完全相同）。
+3. data/history.json —— 格式 {"items":[{"date":"YYYY-MM-DD","weekday":"星期一","file":"YYYY-MM-DD.json"}]}，把今天追加到最前面（去重）。
 4. data/每日经济早报-YYYY-MM-DD.md —— Markdown 完整版，供电脑端阅读留存。
 
-第 4 步：汇报
-全部保存完成后，输出 1-2 句简短汇报：今天早报已生成（日期 + 一句话要点），并提示“手机端刷新即可查看”。
+第 4 步：汇报（固定格式，脚本自愈依赖此格式，务必照做）
+先输出 1-2 句简短汇报（今天早报已生成 + 一句话要点 + “手机端刷新即可查看”）。然后无论文件是否已成功写入磁盘，都必须依次输出以下三个分节与代码块，分节标题一字不改：
+
+## 文件 1：`data/latest.json`
+```json
+{ 完整 JSON（与 reports\YYYY-MM-DD.json 相同） }
+```
+
+## 文件 2：`data/history.json`
+```json
+{ "items": [ … ] }
+```
+
+## 文件 3：`data/每日经济早报-YYYY-MM-DD.md`
+```markdown
+# 每日经济早报 · …
+（完整 Markdown 全文）
+```
 
 注意事项：
 - 数据务必准确，正文开头标注“数据截至”时间。
