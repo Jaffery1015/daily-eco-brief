@@ -1,4 +1,4 @@
-param([switch]$Force)
+﻿param([switch]$Force)
 
 # ============================================================
 #  每日经济早报 · codex exec 生成脚本（v2）
@@ -102,7 +102,10 @@ if (-not $finished) {
   Log "[错误] codex exec 超过 $TimeoutSec 秒未结束，已强制终止（疑似 cc-switch/DeepSeek 网络问题）"
   $code = 124
 } else {
+  # 修复：WaitForExit(超时) 后 ExitCode 可能仍为 null，需再 WaitForExit() 刷新，否则会漏掉提交推送
+  try { $proc.WaitForExit() } catch {}
   $code = $proc.ExitCode
+  if ($null -eq $code) { $code = 0 }
 }
 
 # 把本次输出追加到 codex-运行输出.log（保留原有日志习惯）
@@ -120,7 +123,20 @@ if (-not (Test-Path -LiteralPath $todayReport)) {
   & (Join-Path $Project "automation\extract-report-from-log.ps1") -Project $Project -Date $today *>> $OutputFile
   if (Test-Path -LiteralPath $todayReport) {
     Log "[自愈] 恢复成功：latest.json / reports\$today.json / history.json / md"
-    $code = 0
+    # 校验恢复内容确实是今天的（防止把旧日期内容当作今日推送）
+    try {
+      $meta = Get-Content -LiteralPath $todayReport -Raw -Encoding UTF8 | ConvertFrom-Json
+      if ($meta.meta.date -ne $today) {
+        Log "[错误] 自愈恢复的文件 meta.date=$($meta.meta.date) 不是 $today，判定失败（不推送旧内容冒充今日）"
+        $code = 3
+      } else {
+        Log "[校验] 自愈恢复的内容日期正确（meta.date=$($meta.meta.date)）"
+        $code = 0
+      }
+    } catch {
+      Log "[错误] 自愈恢复的文件解析失败，判定失败"
+      $code = 3
+    }
   } else {
     Log "[错误] 自愈恢复失败：今日报告仍未生成（请检查网络/代理，或手动生成）"
     if ($code -eq 0) { $code = 3 }
