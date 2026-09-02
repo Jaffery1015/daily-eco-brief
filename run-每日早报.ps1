@@ -32,6 +32,21 @@ function Log([string]$msg) {
 # 防重复：当天早报已生成则跳过（避免“8:30 + 登录补跑”等多次触发重复生成；手动加 -Force 可强制重跑）
 $today = Get-Date -Format "yyyy-MM-dd"
 $todayReport = Join-Path $Project ("data\reports\" + $today + ".json")
+$todayMd    = Join-Path $Project ("data\每日经济早报-" + $today + ".md")
+
+# 若 reports\$today.json 存在但不是今天的（自愈/误恢复的旧内容），删掉后重新生成，避免一直“跳过”
+if (Test-Path -LiteralPath $todayReport) {
+  $stale = $true
+  try {
+    $chk = Get-Content -LiteralPath $todayReport -Raw -Encoding UTF8 | ConvertFrom-Json
+    if ($chk.meta.date -eq $today) { $stale = $false }
+  } catch {}
+  if ($stale) {
+    Log "[清理] reports\$today.json 日期不是今天，删除旧文件后重新生成"
+    Remove-Item -LiteralPath $todayReport,$todayMd -Force -ErrorAction SilentlyContinue
+  }
+}
+
 if ((Test-Path -LiteralPath $todayReport) -and (-not $Force)) {
   Log "[跳过] 今日($today)早报已生成，跳过本次运行（如需强制重跑请加 -Force）"
   exit 0

@@ -100,7 +100,7 @@ $m1 = [regex]::Match($text, ('## 文件 1[^\r\n]*\r?\n' + $blank + '```(?:json)?
 if ($m1.Success) {
   $json = $m1.Groups['json'].Value
   try { $o = $json | ConvertFrom-Json } catch { Write-Output "ERR: 文件1 JSON 解析失败: $($_.Exception.Message)"; exit 1 }
-  if ($o.meta.date -ne $Date) { Write-Output "WARN: 文件1 中 meta.date=$($o.meta.date) 与目标日期 $Date 不一致，仍按内容写入" }
+  if ($o.meta.date -ne $Date) { Write-Output "ERR: 文件1 中 meta.date=$($o.meta.date) 与目标日期 $Date 不一致，拒绝写入（防止旧内容冒充今日）"; exit 2 }
   $norm = Normalize-Report $o
   $outJson = $norm | ConvertTo-Json -Depth 20
   $latest  = Join-Path $Project "data\latest.json"
