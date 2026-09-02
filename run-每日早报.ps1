@@ -29,7 +29,7 @@ function Log([string]$msg) {
   [System.IO.File]::AppendAllText($LogFile, $line + [Environment]::NewLine, (New-Object System.Text.UTF8Encoding($false)))
 }
 
-# 防重复：当天早报已生成则跳过（避免“8:30 + 登录补跑”等多次触发重复生成；手动加 -Force 可强制重跑）
+# 防重复：当天早报已生成则跳过（开机/登录触发 + 失败自动重试会多次调用本脚本；手动加 -Force 可强制重跑）
 $today = Get-Date -Format "yyyy-MM-dd"
 $todayReport = Join-Path $Project ("data\reports\" + $today + ".json")
 $todayMd    = Join-Path $Project ("data\每日经济早报-" + $today + ".md")
@@ -51,6 +51,15 @@ if ((Test-Path -LiteralPath $todayReport) -and (-not $Force)) {
   Log "[跳过] 今日($today)早报已生成，跳过本次运行（如需强制重跑请加 -Force）"
   exit 0
 }
+
+# 单实例保护：避免手动运行与计划任务/重复触发并发（后到者直接退出，由先到者完成）
+try {
+  $runMutex = New-Object System.Threading.Mutex($false, "Local\DailyEcoBriefRun")
+  if (-not $runMutex.WaitOne(0)) {
+    Log "[跳过] 已有另一个生成任务在运行，本次退出"
+    exit 0
+  }
+} catch {}
 
 # 自动定位 codex CLI：优先 Codex 桌面端自带的最新版（路径 hash 会随更新变化）
 $binRoot = Join-Path $env:LOCALAPPDATA "OpenAI\Codex\bin"
@@ -75,19 +84,29 @@ if (-not (Test-Path -LiteralPath $PromptFile)) {
 }
 
 # 检查本地模型代理（cc-switch）是否在线：127.0.0.1:15721
-try {
-  $probe = New-Object System.Net.Sockets.TcpClient
-  $iar = $probe.BeginConnect("127.0.0.1", 15721, $null, $null)
-  if (-not $iar.AsyncWaitHandle.WaitOne(3000)) {
-    Log "[错误] 本地模型代理(cc-switch, 127.0.0.1:15721)未运行，无法生成早报。请先启动 cc-switch 并开启本地代理。"
+# 开机/登录后 cc-switch 可能还在自启，最多等待 120 秒再判定失败
+function Test-CcSwitchUp {
+  try {
+    $probe = New-Object System.Net.Sockets.TcpClient
+    $iar = $probe.BeginConnect("127.0.0.1", 15721, $null, $null)
+    $ok = $iar.AsyncWaitHandle.WaitOne(3000)
     $probe.Close()
-    exit 2
-  }
-  $probe.Close()
-} catch {
-  Log "[错误] 检查本地模型代理失败: $($_.Exception.Message)"
+    return $ok
+  } catch { return $false }
+}
+$ccUp = Test-CcSwitchUp
+$ccWait = 0
+while (-not $ccUp -and $ccWait -lt 120) {
+  Start-Sleep -Seconds 10
+  $ccWait += 10
+  Log "[等待] cc-switch 本地代理未就绪（已等 $ccWait 秒），继续等待..."
+  $ccUp = Test-CcSwitchUp
+}
+if (-not $ccUp) {
+  Log "[错误] 本地模型代理(cc-switch, 127.0.0.1:15721)在 120 秒内未就绪，无法生成早报。请检查 cc-switch 是否已开启本地代理。"
   exit 2
 }
+Log "[就绪] cc-switch 本地代理已就绪"
 
 # 显式按 UTF-8 读取提示词
 $Prompt = [System.IO.File]::ReadAllText($PromptFile, [System.Text.Encoding]::UTF8)
