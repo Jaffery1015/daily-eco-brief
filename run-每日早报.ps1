@@ -189,11 +189,22 @@ if ($code -eq 0) {
       $remote = & $Git -C $Project remote get-url origin 2>&1
       if ($LASTEXITCODE -eq 0 -and $remote) {
         $pushOk = $false
-        for ($attempt = 1; $attempt -le 5; $attempt++) {
-          $null = & $Git -C $Project push origin main 2>&1
+        # 检测本地代理（Clash 类默认 7897）：直连不通时自动改走代理
+        $proxy = ""
+        try {
+          $pc = New-Object System.Net.Sockets.TcpClient
+          $ar = $pc.BeginConnect("127.0.0.1", 7897, $null, $null)
+          if ($ar.AsyncWaitHandle.WaitOne(1500)) { $proxy = "http://127.0.0.1:7897" }
+          $pc.Close()
+        } catch {}
+        for ($attempt = 1; $attempt -le 6; $attempt++) {
+          $useProxy = ($proxy -and ($attempt % 2 -eq 0))
+          if ($useProxy) { $null = & $Git -C $Project -c http.proxy=$proxy push origin main 2>&1 }
+          else          { $null = & $Git -C $Project push origin main 2>&1 }
           if ($LASTEXITCODE -eq 0) { $pushOk = $true; break }
-          Log ("[同步] 第 {0}/5 次推送失败（退出码 {1}），30 秒后重试..." -f $attempt, $LASTEXITCODE)
-          Start-Sleep -Seconds 30
+          $mode = if ($useProxy) { "代理" } else { "直连" }
+          Log ("[同步] 第 {0}/6 次推送失败（{1}，退出码 {2}），30 秒后重试..." -f $attempt, $mode, $LASTEXITCODE)
+          if ($attempt -lt 6) { Start-Sleep -Seconds 30 }
         }
         if ($pushOk) { Log "[同步] 已提交 $($staged.Count) 个文件并推送成功" }
         else { Log "[同步] 推送失败：请检查网络后手动执行 git push" }
